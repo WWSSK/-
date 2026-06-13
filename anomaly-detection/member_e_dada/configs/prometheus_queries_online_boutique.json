@@ -1,0 +1,8 @@
+{
+  "latency_p99_ms": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{namespace=\"train-ticket\"}[1m])) by (le)) * 1000",
+  "error_rate": "sum(rate(http_requests_total{namespace=\"train-ticket\",status=~\"5..\"}[1m])) / clamp_min(sum(rate(http_requests_total{namespace=\"train-ticket\"}[1m])), 1)",
+  "request_rate": "sum(rate(http_requests_total{namespace=\"train-ticket\"}[1m]))",
+  "cpu_usage": "sum(rate(container_cpu_usage_seconds_total{namespace=\"train-ticket\",container!=\"\",pod!=\"\"}[1m]))",
+  "memory_usage": "sum(container_memory_working_set_bytes{namespace=\"train-ticket\",container!=\"\",pod!=\"\"})"
+}
+
