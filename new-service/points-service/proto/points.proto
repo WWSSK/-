@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+package points;
+
+option go_package = "points-service/pb";
+
+// PointsService manages user loyalty points for the Online-Boutique platform.
+// Users earn points on purchases and can redeem them for discounts.
+service PointsService {
+    // GetPoints returns the current points balance for a user.
+    rpc GetPoints(GetPointsRequest) returns (GetPointsResponse);
+
+    // EarnPoints awards points to a user after a completed purchase.
+    // Called by checkoutservice after a successful order.
+    rpc EarnPoints(EarnPointsRequest) returns (EarnPointsResponse);
+
+    // RedeemPoints deducts points from a user's balance for a discount.
+    // Called during checkout when a user opts to use their points.
+    rpc RedeemPoints(RedeemPointsRequest) returns (RedeemPointsResponse);
+
+    // GetHistory returns the points transaction history for a user.
+    rpc GetHistory(GetHistoryRequest) returns (GetHistoryResponse);
+
+    // HealthCheck returns the service health status.
+    rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// ── GetPoints ──────────────────────────────────────────────
+
+message GetPointsRequest {
+    string user_id = 1;
+}
+
+message GetPointsResponse {
+    string user_id      = 1;
+    int64  balance      = 2;  // current available points
+    int64  total_earned = 3;  // lifetime points earned
+    int64  total_spent  = 4;  // lifetime points redeemed
+}
+
+// ── EarnPoints ─────────────────────────────────────────────
+
+message EarnPointsRequest {
+    string user_id      = 1;
+    string order_id     = 2;
+    double order_amount = 3;  // purchase amount in original currency
+}
+
+message EarnPointsResponse {
+    string user_id       = 1;
+    int64  points_earned = 2;  // how many points were added
+    int64  new_balance   = 3;  // balance after earning
+}
+
+// ── RedeemPoints ───────────────────────────────────────────
+
+message RedeemPointsRequest {
+    string user_id          = 1;
+    int64  points_to_redeem = 2;
+}
+
+message RedeemPointsResponse {
+    bool   success          = 1;
+    string message          = 2;  // error description if success == false
+    int64  points_redeemed  = 3;
+    int64  new_balance      = 4;
+    double discount_amount  = 5;  // monetary value of redeemed points
+}
+
+// ── GetHistory ─────────────────────────────────────────────
+
+message GetHistoryRequest {
+    string user_id = 1;
+    int32  limit   = 2;  // max number of transactions to return (default 20)
+}
+
+message PointsTransaction {
+    string transaction_id = 1;
+    string user_id        = 2;
+    string type           = 3;  // "EARN" or "REDEEM"
+    int64  points         = 4;
+    string order_id       = 5;
+    string timestamp      = 6;  // ISO 8601 format
+}
+
+message GetHistoryResponse {
+    string                        user_id      = 1;
+    repeated PointsTransaction    transactions = 2;
+}
+
+// ── HealthCheck ────────────────────────────────────────────
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+    bool   healthy = 1;
+    string message = 2;
+}

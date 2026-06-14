@@ -1,0 +1,108 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: online-boutique
+---
+# ── ConfigMap ─────────────────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: points-service-config
+  namespace: online-boutique
+data:
+  POINTS_SERVICE_PORT: "50054"
+  POINTS_DB_PATH: "/data/points.db"
+---
+# ── PersistentVolumeClaim for SQLite data ─────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: points-service-data
+  namespace: online-boutique
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+# ── Deployment ────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: points-service
+  namespace: online-boutique
+  labels:
+    app: points-service
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: points-service
+  template:
+    metadata:
+      labels:
+        app: points-service
+        tier: backend
+    spec:
+      containers:
+        - name: points-service
+          image: yourdockerhub/points-service:v1   # <-- replace with your image
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: grpc
+              containerPort: 50054
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: points-service-config
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+          livenessProbe:
+            exec:
+              command:
+                - /app/grpc_health_probe
+                - -addr=:50054
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 3
+          readinessProbe:
+            exec:
+              command:
+                - /app/grpc_health_probe
+                - -addr=:50054
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: points-service-data
+---
+# ── Service (gRPC) ────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: points-service
+  namespace: online-boutique
+  labels:
+    app: points-service
+spec:
+  type: ClusterIP
+  selector:
+    app: points-service
+  ports:
+    - name: grpc
+      port: 50054
+      targetPort: 50054
+      protocol: TCP
