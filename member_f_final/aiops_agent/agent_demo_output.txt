@@ -1,0 +1,131 @@
+Detected 3 anomaly event(s). Handling first 3 event(s).
+
+================================================================================
+Event #1
+{
+  "timestamp": "2026-06-13 16:36:30",
+  "source": "member_e_csv:sample_member_e_detection_scores.csv",
+  "severity": "warning",
+  "anomaly_score": 40156.73,
+  "threshold": 61.5777,
+  "target_service": "checkoutservice",
+  "fault_type": "cpu_pressure",
+  "evidence": "cpu_checkoutservice mean robust z-score=167.3; z_extreme; spike_checkoutservice; surge_checkoutservice",
+  "raw": {
+    "timestamp": "2026-06-13 16:36:30",
+    "anomaly_score": "40156.73",
+    "threshold": "61.5777",
+    "prediction": "1",
+    "target_service": "checkoutservice",
+    "fault_type": "cpu_pressure",
+    "evidence": "cpu_checkoutservice mean robust z-score=167.3; z_extreme; spike_checkoutservice; surge_checkoutservice"
+  }
+}
+
+[Diagnosis]
+Root cause: checkoutservice CPU pressure / resource saturation
+Confidence: medium
+
+Explanation:
+成员 E 的异常检测结果触发告警，主要异常服务为 checkoutservice。证据中出现 CPU、surge、z_extreme 或 checkoutservice 等高贡献特征，说明该服务可能处于 CPU 过载或计算瓶颈状态。
+
+[LLM skipped] OPENAI_API_KEY not set; using rule-based diagnosis.
+
+Safe first steps:
+  - 先查看 pod CPU 使用率和最近事件，确认是否存在 CPU 尖峰。
+  - 如果服务持续无响应，可以重启对应 deployment。
+  - 后续优化建议：提高 CPU limit/request，或减少压测并发。
+
+[DRY-RUN] Suggested commands:
+  kubectl get pods -n online-boutique | grep checkoutservice
+  kubectl describe pod -n online-boutique -l app=checkoutservice
+  kubectl logs -n online-boutique -l app=checkoutservice --tail=100
+  kubectl top pod -n online-boutique | grep checkoutservice
+  kubectl rollout restart deployment/checkoutservice -n online-boutique
+
+================================================================================
+Event #2
+{
+  "timestamp": "2026-06-13 16:41:30",
+  "source": "member_e_csv:sample_member_e_detection_scores.csv",
+  "severity": "warning",
+  "anomaly_score": 800.12,
+  "threshold": 61.5777,
+  "target_service": "cartservice",
+  "fault_type": "pod_kill",
+  "evidence": "cartservice requests failed; pod restarted; service unavailable",
+  "raw": {
+    "timestamp": "2026-06-13 16:41:30",
+    "anomaly_score": "800.12",
+    "threshold": "61.5777",
+    "prediction": "1",
+    "target_service": "cartservice",
+    "fault_type": "pod_kill",
+    "evidence": "cartservice requests failed; pod restarted; service unavailable"
+  }
+}
+
+[Diagnosis]
+Root cause: cartservice pod kill / pod restart
+Confidence: medium
+
+Explanation:
+异常结果与 cartservice 相关，故障类型被判断为 Pod Kill 或实例重启。这通常会导致瞬时不可用、请求失败和 Kubernetes 事件中出现 Killing/Restart。
+
+[LLM skipped] OPENAI_API_KEY not set; using rule-based diagnosis.
+
+Safe first steps:
+  - 查看 Kubernetes events 确认 pod 是否被删除或重启。
+  - 查看 deployment 副本是否恢复到期望状态。
+  - 必要时删除异常 pod 让 deployment 自动拉起新实例。
+
+[DRY-RUN] Suggested commands:
+  kubectl get pods -n online-boutique | grep cartservice
+  kubectl describe pod -n online-boutique -l app=cartservice
+  kubectl logs -n online-boutique -l app=cartservice --tail=100
+  kubectl get events -n online-boutique --sort-by=.lastTimestamp | tail -30
+  kubectl delete pod -n online-boutique -l app=cartservice
+
+================================================================================
+Event #3
+{
+  "timestamp": "2026-06-13 16:24:30",
+  "source": "member_e_csv:sample_member_e_detection_scores.csv",
+  "severity": "warning",
+  "anomaly_score": 950.5,
+  "threshold": 61.5777,
+  "target_service": "frontend",
+  "fault_type": "network_delay",
+  "evidence": "frontend latency increased; request timeout; network delay",
+  "raw": {
+    "timestamp": "2026-06-13 16:24:30",
+    "anomaly_score": "950.50",
+    "threshold": "61.5777",
+    "prediction": "1",
+    "target_service": "frontend",
+    "fault_type": "network_delay",
+    "evidence": "frontend latency increased; request timeout; network delay"
+  }
+}
+
+[Diagnosis]
+Root cause: frontend network delay / unstable network
+Confidence: medium
+
+Explanation:
+异常结果与 frontend 相关，故障类型被判断为网络延迟。这通常对应 ChaosMesh NetworkChaos、请求超时、响应时间升高或前端访问变慢。
+
+[LLM skipped] OPENAI_API_KEY not set; using rule-based diagnosis.
+
+Safe first steps:
+  - 检查是否仍存在 NetworkChaos 规则。
+  - 检查 service endpoint 和 pod 网络状态。
+  - 如服务恢复后仍异常，可重启相关 deployment。
+
+[DRY-RUN] Suggested commands:
+  kubectl get pods -n online-boutique | grep frontend
+  kubectl describe pod -n online-boutique -l app=frontend
+  kubectl logs -n online-boutique -l app=frontend --tail=100
+  kubectl get networkchaos -A
+  kubectl describe svc frontend -n online-boutique
+  kubectl rollout restart deployment/frontend -n online-boutique
