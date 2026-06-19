@@ -1,4 +1,0 @@
-timestamp,anomaly_score,threshold,prediction,target_service,fault_type,evidence
-2026-06-13 16:36:30,40156.73,61.5777,1,checkoutservice,cpu_pressure,"cpu_checkoutservice mean robust z-score=167.3; z_extreme; spike_checkoutservice; surge_checkoutservice"
-2026-06-13 16:41:30,800.12,61.5777,1,cartservice,pod_kill,"cartservice requests failed; pod restarted; service unavailable"
-2026-06-13 16:24:30,950.50,61.5777,1,frontend,network_delay,"frontend latency increased; request timeout; network delay"
